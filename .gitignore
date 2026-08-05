@@ -53,6 +53,7 @@ npm-debug.log
 yarn-error.log
 testem.log
 /typings
+logs/
 
 # System
 .DS_Store
