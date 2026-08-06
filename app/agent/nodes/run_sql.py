@@ -10,9 +10,14 @@ from langgraph.runtime import Runtime
 from app.agent.context import DataAgentContext
 from app.agent.state import DataAgentState
 from app.core.log import logger
+from app.services.sql_guard import SQLGuard
 
 
 async def run_sql(state: DataAgentState, runtime: Runtime[DataAgentContext]):
+    error = SQLGuard.check(state["sql"])
+    if error:
+        runtime.stream_writer({"type": "error", "message": f"SQL 未通过安全校验：{error}"})
+        return {}
     """执行 SQL 并产出最终问数结果"""
 
     writer = runtime.stream_writer
