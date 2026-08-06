@@ -1,27 +1,35 @@
-"""查询接口路由（第 5 章先演示 SSE，第 23 章接入完整问数服务）"""
+"""
+问数查询接口路由
 
-import asyncio
-import json
+负责定义前端访问的 `/api/query` 接口，把 HTTP 请求交给 QueryService，
+并把问数智能体执行过程以 SSE 形式持续返回给客户端。
+路由层只处理请求体、依赖声明和响应类型，不直接创建 Repository 或执行图节点。
+"""
 
-from fastapi import APIRouter
+from typing import Annotated
+
+from fastapi import APIRouter, Depends
 from starlette.responses import StreamingResponse
 
+from app.api.dependencies import get_query_service
 from app.api.schemas.query_schema import QuerySchema
+from app.services.query_service import QueryService
 
+# 当前模块只维护查询相关接口，避免后续所有 API 都挤在 main.py 中
 query_router = APIRouter()
 
 
 @query_router.post("/api/query")
-async def query_handler(query: QuerySchema):
-    """接收用户问题，先返回一条 SSE 演示流（第 23 章替换为真实问数）"""
+async def query_handler(
+    # 请求体参数：FastAPI 会把前端 JSON 自动解析成 QuerySchema
+    query: QuerySchema,
+    # 服务依赖：FastAPI 会调用 get_query_service，递归组装它所需的仓储和客户端
+    query_service: Annotated[QueryService, Depends(get_query_service)],
+):
+    """接收用户自然语言问题，并流式返回 LangGraph 工作流输出"""
 
-    async def fake_stream():
-        """演示 SSE 帧：模拟 3 步节点进度 + 一个结果"""
-        steps = ["抽取关键词", "召回字段信息", "生成SQL"]
-        for step in steps:
-            # 每帧格式：data: {json}\n\n
-            yield f"data: {json.dumps({'type': 'progress', 'step': step, 'status': 'running'}, ensure_ascii=False)}\n\n"
-            await asyncio.sleep(0.5)  # 模拟每个节点耗时
-        yield f"data: {json.dumps({'type': 'result', 'data': [{'region': '华北', 'amount': 123456}]}, ensure_ascii=False)}\n\n"
-
-    return StreamingResponse(fake_stream(), media_type="text/event-stream")
+    return StreamingResponse(
+        # query.query 是用户问题字符串；QueryService.query 返回异步生成器供响应逐段消费
+        query_service.query(query.query),
+        media_type="text/event-stream",
+    )
