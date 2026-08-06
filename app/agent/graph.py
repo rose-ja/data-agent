@@ -53,6 +53,7 @@ graph_builder.add_node("add_extra_context", add_extra_context)
 graph_builder.add_node("generate_sql", generate_sql)
 graph_builder.add_node("validate_sql", validate_sql)
 graph_builder.add_node("correct_sql", correct_sql)
+graph_builder.add_node("give_up", give_up)
 graph_builder.add_node("run_sql", run_sql)
 
 # 从用户问题开始，先抽取关键词作为后续检索的基础
@@ -78,13 +79,22 @@ graph_builder.add_edge("filter_metric", "add_extra_context")
 graph_builder.add_edge("add_extra_context", "generate_sql")
 graph_builder.add_edge("generate_sql", "validate_sql")
 
-# SQL 校验通过就直接执行，校验失败则先进入修正节点
+# 条件边升级：无错→执行；有错未超限→再修正；超限→放弃
 graph_builder.add_conditional_edges(
     source="validate_sql",
-    path=lambda state: "run_sql" if state["error"] is None else "correct_sql",
-    path_map={"run_sql": "run_sql", "correct_sql": "correct_sql"},
+    path=lambda state: (
+        "run_sql" if state["error"] is None
+        else "correct_sql" if state.get("retry_count", 0) < 3
+        else "give_up"
+    ),
+    path_map={
+        "run_sql": "run_sql",
+        "correct_sql": "correct_sql",
+        "give_up": "give_up",
+    },
 )
-graph_builder.add_edge("correct_sql", "run_sql")
+graph_builder.add_edge("correct_sql", "validate_sql")
+graph_builder.add_edge("give_up", END)
 graph_builder.add_edge("run_sql", END)
 
 # 编译后的 graph 是对外使用的 Agent 执行入口
