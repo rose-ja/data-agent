@@ -37,9 +37,12 @@ app.include_router(query_router)
 
 @app.middleware("http")
 async def add_request_id(request: Request, call_next):
-    # 请求被处理之前
-    request_id = uuid.uuid4()
-    request_id_ctx_var.set(request_id)
-    response = await call_next(request)
-    # 请求被处理之后
-    return response
+    # 使用 token 在请求结束时恢复上层上下文，避免长生命周期进程中的 ID 泄漏。
+    request_id = str(uuid.uuid4())
+    context_token = request_id_ctx_var.set(request_id)
+    try:
+        response = await call_next(request)
+        response.headers["X-Request-ID"] = request_id
+        return response
+    finally:
+        request_id_ctx_var.reset(context_token)
