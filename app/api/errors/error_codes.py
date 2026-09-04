@@ -6,6 +6,7 @@ from enum import StrEnum
 class ErrorCode(StrEnum):
     """错误码按责任边界分组，文案变化不影响客户端判断。"""
 
+    HTTP_ERROR = "HTTP_ERROR"
     REQUEST_BODY_INVALID = "REQUEST_BODY_INVALID"
     QUERY_EMPTY = "QUERY_EMPTY"
     QUERY_TOO_LONG = "QUERY_TOO_LONG"
