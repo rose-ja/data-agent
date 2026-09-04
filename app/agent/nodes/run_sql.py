@@ -16,7 +16,13 @@ from app.services.sql_guard import SQLGuard
 async def run_sql(state: DataAgentState, runtime: Runtime[DataAgentContext]):
     error = SQLGuard.check(state["sql"])
     if error:
-        runtime.stream_writer({"type": "error", "message": f"SQL 未通过安全校验：{error}"})
+        runtime.stream_writer({
+            "type": "error",
+            "code": error.code.value,
+            "message": f"SQL 未通过安全校验：{error.message}",
+            "stage": "run_sql",
+            "terminal": True,
+        })
         return {}
     """执行 SQL 并产出最终问数结果"""
 
