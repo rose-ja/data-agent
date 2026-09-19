@@ -53,15 +53,20 @@ class MetricQdrantRepository:
             )
 
     async def search(
-        self, embedding: list[float], score_threshold: float = 0.6, limit: int = 20
+        self, embedding: list[float], score_threshold: float | None = None, limit: int = 20
     ) -> list[MetricInfo]:
         """按向量相似度检索指标元数据，并还原为 MetricInfo 实体"""
-
+        # 未显式指定阈值时使用全局配置，召回调优只需改配置无需改代码
+        effective_threshold = (
+            score_threshold
+            if score_threshold is not None
+            else app_config.qdrant.score_threshold
+        )
         result = await self.client.query_points(
             collection_name=self.collection_name,
             query=embedding,
             limit=limit,
-            score_threshold=score_threshold,
+            score_threshold=effective_threshold,
         )
         # Qdrant point 的 payload 中保存的是指标元数据，业务层继续使用 MetricInfo
         return [MetricInfo(**point.payload) for point in result.points]

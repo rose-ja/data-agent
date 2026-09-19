@@ -4,9 +4,10 @@ services:
     container_name: mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: dataagent123
-      MYSQL_USER: dataagent
-      MYSQL_PASSWORD: dataagent123
+      # 账号密码支持 .env 覆盖，默认值仅为本地演示凭据
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-dataagent123}
+      MYSQL_USER: ${MYSQL_USER:-dataagent}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-dataagent123}
     ports:
       - "3306:3306"
     volumes:

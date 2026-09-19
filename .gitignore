@@ -61,3 +61,9 @@ Thumbs.db
 
 # Local TEI embedding model files (large)
 docker/embedding/
+
+# Local assistant config
+docker/.claude/
+
+# 本地评估产物（可按需强制添加）
+eval/results/

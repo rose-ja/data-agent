@@ -9,24 +9,27 @@ logging:
     enable: true
     level: INFO
 
+# 数据库账号密码通过环境变量注入，默认值仅为本地 docker compose 演示栈凭据
 db_meta:
-  host: localhost
-  port: 3306
-  user: dataagent
-  password: dataagent123
+  host: ${oc.env:MYSQL_HOST,localhost}
+  port: ${oc.env:MYSQL_PORT,3306}
+  user: ${oc.env:MYSQL_USER,dataagent}
+  password: ${oc.env:MYSQL_PASSWORD,dataagent123}
   database: meta
 
 db_dw:
-  host: localhost
-  port: 3306
-  user: dataagent
-  password: dataagent123
+  host: ${oc.env:MYSQL_HOST,localhost}
+  port: ${oc.env:MYSQL_PORT,3306}
+  user: ${oc.env:MYSQL_USER,dataagent}
+  password: ${oc.env:MYSQL_PASSWORD,dataagent123}
   database: dw
 
 qdrant:
-  host: localhost
+  host: ${oc.env:QDRANT_HOST,localhost}
   port: 6333
   embedding_size: 1024
+  # 向量召回相似度阈值：过滤低相关字段/指标，降低传入 LLM 的上下文噪音
+  score_threshold: ${oc.env:QDRANT_SCORE_THRESHOLD,0.8}
 
 embedding:
   host: localhost

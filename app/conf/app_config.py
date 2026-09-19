@@ -58,6 +58,7 @@ class QdrantConfig:
     host: str
     port: int
     embedding_size: int
+    score_threshold: float
 
 
 @dataclass

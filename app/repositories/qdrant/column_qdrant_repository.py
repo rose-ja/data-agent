@@ -51,14 +51,20 @@ class ColumnQdrantRepository:
             )
 
     async def search(
-        self, embedding: list[float], score_threshold: float = 0.6, limit: int = 20
+        self, embedding: list[float], score_threshold: float | None = None, limit: int = 20
     ) -> list[ColumnInfo]:
         """按向量相似度检索字段元数据，并还原为 ColumnInfo 实体"""
+        # 未显式指定阈值时使用全局配置，召回调优只需改配置无需改代码
+        effective_threshold = (
+            score_threshold
+            if score_threshold is not None
+            else app_config.qdrant.score_threshold
+        )
         result = await self.client.query_points(
             collection_name=self.collection_name,
             query=embedding,
             limit=limit,
-            score_threshold=score_threshold,
+            score_threshold=effective_threshold,
         )
         # Qdrant 只保存字段元数据 payload，业务层继续使用 ColumnInfo
         return [ColumnInfo(**point.payload) for point in result.points]
