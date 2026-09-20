@@ -101,6 +101,8 @@ class MetaKnowledgeService:
     async def _save_column_info_to_qdrant(self, column_infos: list[ColumnInfo]):
         """把字段元数据继续推进成可语义检索的 Qdrant 向量点"""
         await self.column_qdrant_repository.ensure_collection()
+        # 重建语义：写入前先清空旧向量点，防止重复构建时点位翻倍
+        await self.column_qdrant_repository.clear_points()
 
         points: list[dict] = []
         for column_info in column_infos:
@@ -213,6 +215,8 @@ class MetaKnowledgeService:
     async def _save_metrics_to_qdrant(self, metric_infos: list[MetricInfo]):
         """把指标元数据继续推进成可语义检索的 Qdrant 向量点"""
         await self.metric_qdrant_repository.ensure_collection()
+        # 重建语义：写入前先清空旧向量点，防止重复构建时点位翻倍
+        await self.metric_qdrant_repository.clear_points()
 
         points: list[dict] = []
         for metric_info in metric_infos:
@@ -264,6 +268,10 @@ class MetaKnowledgeService:
         context = OmegaConf.load(config_path)
         schema = OmegaConf.structured(MetaConfig)
         meta_config: MetaConfig = OmegaConf.to_object(OmegaConf.merge(schema, context))
+
+        # 构建语义是全量重建：先清空旧元数据，避免重复执行时主键冲突或向量点累积
+        async with self.meta_mysql_repository.session.begin():
+            await self.meta_mysql_repository.clear_all()
 
         # 根据配置文件判断后续要进入哪条构建链路
         if meta_config.tables:

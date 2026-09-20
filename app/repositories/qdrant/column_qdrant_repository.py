@@ -7,7 +7,7 @@ Service 层负责决定一个字段要拆成哪些 point
 Repository 只关心集合存在和向量点如何稳定落库
 """
 
-from qdrant_client import AsyncQdrantClient
+from qdrant_client import AsyncQdrantClient, models
 from qdrant_client.http.models import PointStruct
 from qdrant_client.models import Distance, VectorParams
 
@@ -32,6 +32,13 @@ class ColumnQdrantRepository:
                     size=app_config.qdrant.embedding_size, distance=Distance.COSINE
                 ),
             )
+
+    async def clear_points(self):
+        """清空集合内全部向量点，配合重建流程避免重复 upsert 造成的累积"""
+        await self.client.delete(
+            collection_name=self.collection_name,
+            points_selector=models.Filter(must=[]),
+        )
 
     async def upsert(
         self,

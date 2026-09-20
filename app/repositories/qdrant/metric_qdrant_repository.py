@@ -7,7 +7,7 @@
 所以指标单独使用 metric_info_collection，避免后续召回时和字段结果混在一起
 """
 
-from qdrant_client import AsyncQdrantClient
+from qdrant_client import AsyncQdrantClient, models
 from qdrant_client.models import Distance, PointStruct, VectorParams
 
 from app.conf.app_config import app_config
@@ -33,6 +33,13 @@ class MetricQdrantRepository:
                     distance=Distance.COSINE,
                 ),
             )
+
+    async def clear_points(self):
+        """清空集合内全部向量点，配合重建流程避免重复 upsert 造成的累积"""
+        await self.client.delete(
+            collection_name=self.collection_name,
+            points_selector=models.Filter(must=[]),
+        )
 
     async def upsert(
         self,
