@@ -11,13 +11,15 @@ from dataclasses import asdict
 
 from elasticsearch import AsyncElasticsearch
 
+from app.conf.app_config import app_config
 from app.entities.value_info import ValueInfo
 
 
 class ValueESRepository:
     """负责字段取值全文索引的创建 写入和基础检索"""
 
-    index_name = "value_index"
+    # 索引名统一由配置驱动，构建与召回两侧天然一致
+    index_name = app_config.es.index_name
     # value 字段使用 IK 分词，这样地区 会员等级 品类等中文值才能按全文方式检索
     index_mappings = {
         "dynamic": False,
